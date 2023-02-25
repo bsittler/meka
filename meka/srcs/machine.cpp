@@ -193,6 +193,9 @@ void    Machine_Set_Handler_MemRW(void)
     case MAPPER_SMS_Korean_MD_FFFA:
         WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_MD_FFFA;
         break;
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_GG_15_BFFF_FFFF;
+        break;
     }
 }
 
@@ -465,6 +468,24 @@ void    Machine_Set_Mapping (void)
         for (int i = 0; i != MAPPER_REGS_MAX; i++)
             g_machine.mapper_regs[i] = 0;
         g_machine.mapper_regs[2] = 1;
+        break;
+
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 4;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
+        VDP_VideoMode_Change();
         break;
 
     case MAPPER_SC3000_Survivors_Multicart:
