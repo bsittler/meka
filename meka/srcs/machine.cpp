@@ -22,6 +22,7 @@
 #include "tvtype.h"
 #include "sound/fmunit.h"
 #include "sound/psg.h"
+#include "app_game.h"
 
 //-----------------------------------------------------------------------------
 // Data
@@ -196,8 +197,86 @@ void    Machine_Set_Handler_MemRW(void)
     case MAPPER_SMS_Korean_MSX_32KB_2000:
         WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_MSX_32KB_2000;
         break;
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_GG_15_BFFF_FFFF;
+        break;
+    case MAPPER_GG_Super_12_in_1_FFFE:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_12_in_1_FFFE;
+        break;
+    case MAPPER_GG_Turbo_9_in_1_8000_4000:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Turbo_9_in_1_8000_4000;
+        break;
+    case MAPPER_GG_Gear_20_in_1_FFFF_FFFE_button:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Gear_20_in_1_FFFF_FFFE_button;
+        break;
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_FFF8_FFF9_FFFA_FFFE_FFFF;
+        break;
+    case MAPPER_GG_Super_73_in_1_FFFE_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_73_in_1_FFFE_FFFF;
+        break;
+    case MAPPER_GG_Super_73_in_1_8000_4000:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_73_in_1_8000_4000;
+        break;
+    case MAPPER_GG_Super_GG_30_1FFx_FFFx:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_GG_30_1FFx_FFFx;
+        break;
+    case MAPPER_GG_Super_Gear_23_in_1_FFFE_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_Gear_23_in_1_FFFE_FFFF;
+        break;
+    case MAPPER_GG_Super_GG_18_in_1_FFF8_FFFE:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_GG_18_in_1_FFF8_FFFE;
+        break;
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1;
+        break;
+    case MAPPER_SMS_Korean_SMS_32KB_2000:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_SMS_32KB_2000;
+        break;
     case MAPPER_SMS_Korean_MSX_SMS_8000:
         WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_MSX_SMS_8000;
+        break;
+    case MAPPER_GG_Super_68_in_1_FFFE_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_68_in_1_FFFE_FFFF;
+        break;
+    case MAPPER_GG_Gear_6_in_1_FFFE_FFF7_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Gear_6_in_1_FFFE_FFF7_FFFF;
+        break;
+    case MAPPER_GG_Super_9_in_1_FFFE_FFF7_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_9_in_1_FFFE_FFF7_FFFF;
+        break;
+    case MAPPER_SMS_Korean_MSX_16KB_BFFE:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_MSX_16KB_BFFE;
+        break;
+    case MAPPER_SMS_Korean_MSX_16KB_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Korean_MSX_16KB_FFFF;
+        break;
+    case MAPPER_SMS_Meta_Power_FFFF_HiCom:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Meta_Power_FFFF_HiCom;
+        break;
+    case MAPPER_SMS_Power_256KB_FFFF_FFFE:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_SMS_Power_256KB_FFFF_FFFE;
+        break;
+    case MAPPER_GG_48_in_1_FFF8_FFF9_FFFE_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_48_in_1_FFF8_FFF9_FFFE_FFFF;
+        break;
+    case MAPPER_GG_18_in_1_00xx:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_18_in_1_00xx;
+        break;
+    case MAPPER_GG_Super_16_in_1_Columns_FFFx:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Super_16_in_1_Columns_FFFx;
+        break;
+    case MAPPER_GG_30_in_1_FFF6_FFFE_FFF7_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_30_in_1_FFF6_FFFE_FFF7_FFFF;
+        break;
+    case MAPPER_GG_52_in_1_FFF6_FFFE_FFF7_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_52_in_1_FFF6_FFFE_FFF7_FFFF;
+        break;
+    case MAPPER_GG_Real_24_in_1_FFFE_0000_FFFF:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Real_24_in_1_FFFE_0000_FFFF;
+        break;
+    case MAPPER_GG_Homebrew_FFF2:
+        WrZ80 = WrZ80_NoHook = Write_Mapper_GG_Homebrew_FFF2;
         break;
     }
 }
@@ -488,6 +567,242 @@ void    Machine_Set_Mapping (void)
         g_machine.mapper_regs[0] = 0;
         break;
 
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 4;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_12_in_1_FFFE:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        break;
+
+    case MAPPER_GG_Turbo_9_in_1_8000_4000:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[0] = 0x80;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Gear_20_in_1_FFFF_FFFE_button:
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        if (SRAM[0x7FFF] != 0xAA) {
+            SRAM[0x7FFF] = 0xAA;
+            SRAM[0x7FFE] = 0x00;
+        } else {
+            // FIXME: don't know yet how the mapper decides which games are which sizes
+            if (SRAM[0x7FFE] <= 0x1F) {
+                SRAM[0x7FFE] += 0x08;
+            } else {
+                SRAM[0x7FFE] += 0x02;
+            }
+            SRAM[0x7FFE] = ((SRAM[0x7FFE] * 2) & tsms.Pages_Mask_8k) / 2;
+        }
+        g_machine.mapper_regs[0] = SRAM[0x7FFE];
+        Map_8k_ROM(0, ((g_machine.mapper_regs[0]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((g_machine.mapper_regs[0]) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((g_machine.mapper_regs[0] + 1) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((g_machine.mapper_regs[0] + 1) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((g_machine.mapper_regs[0]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((g_machine.mapper_regs[0]) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        // FIXME: don't know yet how the mapper decides which games need SMS-GG mode
+        if ((g_machine.mapper_regs[0] <= 0x1F) | ((g_machine.mapper_regs[0] >= 0x38) && (g_machine.mapper_regs[0] <= 0x3D))) {
+            drv_set(DRV_GG);
+        } else {
+            drv_set(DRV_SMS);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 6;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_73_in_1_FFFE_FFFF:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_73_in_1_8000_4000:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[1] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_GG_30_1FFx_FFFx:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 6;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_Gear_23_in_1_FFFE_FFFF:
+        Map_8k_ROM(0, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_GG_18_in_1_FFF8_FFFE:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 5;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_SMS_Korean_SMS_32KB_2000:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 1;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        break;
+
     case MAPPER_SMS_Korean_MSX_SMS_8000:
         Map_8k_ROM(0, 0x3c & tsms.Pages_Mask_8k);
         Map_8k_ROM(1, 0x3c & tsms.Pages_Mask_8k);
@@ -500,6 +815,247 @@ void    Machine_Set_Mapping (void)
         g_machine.mapper_regs_count = 1;
         for (int i = 0; i != MAPPER_REGS_MAX; i++)
             g_machine.mapper_regs[i] = 0;
+        break;
+
+    case MAPPER_GG_Super_68_in_1_FFFE_FFFF:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 4;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Gear_6_in_1_FFFE_FFF7_FFFF:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        break;
+
+    case MAPPER_GG_Super_9_in_1_FFFE_FFF7_FFFF:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_SMS_Korean_MSX_16KB_BFFE:
+    case MAPPER_SMS_Korean_MSX_16KB_FFFF:
+        Map_8k_ROM(0, (0x20 * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((0x20 * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 1;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        break;
+
+    case MAPPER_SMS_Meta_Power_FFFF_HiCom:
+        if (true) {
+            // FIXME: Right now this uses reset rather than power-cycle to
+            // trigger the outer multicart cycling. This is because Meka
+            // does not yet have hooks for mappers to respond reliably to
+            // power-cycling, nor does it have key bindings to allow easy
+            // use of power-cycling multicarts
+            g_machine.mapper_regs_count = 2;
+            for (int i = 0; i != MAPPER_REGS_MAX; i++)
+                g_machine.mapper_regs[i] = 0;
+            if (SRAM[0x7FFF] != 0xAA) {
+                SRAM[0x7FFF] = 0xAA;
+                SRAM[0x7FFE] = 0x00;
+            } else {
+                SRAM[0x7FFE] += 0x04;
+                SRAM[0x7FFE] = ((SRAM[0x7FFE] * 4) & tsms.Pages_Mask_8k) / 4;
+            }
+            g_machine.mapper_regs[0] = SRAM[0x7FFE];
+            unsigned int base_page_8k = (g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 4;
+            Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, (base_page_8k | 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (base_page_8k | 3) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_RAM(6, 0);
+            Map_8k_RAM(7, 0);
+        }
+        break;
+
+    case MAPPER_SMS_Power_256KB_FFFF_FFFE:
+        if (true) {
+            // FIXME: Right now this uses reset rather than power-cycle to
+            // trigger the outer multicart cycling. This is because Meka
+            // does not yet have hooks for mappers to respond reliably to
+            // power-cycling, nor does it have key bindings to allow easy
+            // use of power-cycling multicarts
+            g_machine.mapper_regs_count = 3;
+            for (int i = 0; i != MAPPER_REGS_MAX; i++)
+                g_machine.mapper_regs[i] = 0;
+            g_machine.mapper_regs[1] = 1;
+            if (SRAM[0x7FFF] != 0xAA) {
+                SRAM[0x7FFF] = 0xAA;
+                SRAM[0x7FFE] = 0x00;
+            } else {
+                SRAM[0x7FFE] += 0x10;
+                SRAM[0x7FFE] = ((SRAM[0x7FFE] * 2) & tsms.Pages_Mask_8k) / 2;
+            }
+            g_machine.mapper_regs[0] = SRAM[0x7FFE];
+            unsigned int base_page_8k = g_machine.mapper_regs[0] * 2;
+            Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, (base_page_8k | 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (base_page_8k | 3) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_RAM(6, 0);
+            Map_8k_RAM(7, 0);
+        }
+        break;
+
+    case MAPPER_GG_48_in_1_FFF8_FFF9_FFFE_FFFF:
+        g_machine.mapper_regs_count = 4;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[0] = 0x1F;
+        g_machine.mapper_regs[3] = 1;
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        break;
+
+    case MAPPER_GG_18_in_1_00xx:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 1;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_Super_16_in_1_Columns_FFFx:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k); // should actually be all zeroes initially
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k); // should actually be all zeroes initially
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        drv_set(DRV_GG);
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        break;
+
+    case MAPPER_GG_30_in_1_FFF6_FFFE_FFF7_FFFF:
+        Map_8k_ROM(0, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x81 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x82 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x83 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x80 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x81 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        break;
+
+    case MAPPER_GG_52_in_1_FFF6_FFFE_FFF7_FFFF:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 1 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[2] = 1;
+        break;
+
+    case MAPPER_GG_Real_24_in_1_FFFE_0000_FFFF:
+        Map_8k_ROM(0, 0 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 1 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 2 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 3 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 4 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 5 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 3;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[1] = 2;
+        g_machine.mapper_regs[2] = 1;
+        drv_set(DRV_GG);
+        break;
+
+    case MAPPER_GG_Homebrew_FFF2:
+        Map_8k_ROM(0, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, 0x02 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, 0x03 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, 0x00 & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, 0x01 & tsms.Pages_Mask_8k);
+        Map_8k_RAM(6, 0);
+        Map_8k_RAM(7, 0);
+        g_machine.mapper_regs_count = 1;
+        for (int i = 0; i != MAPPER_REGS_MAX; i++)
+            g_machine.mapper_regs[i] = 0;
+        g_machine.mapper_regs[0] = 2;
         break;
 
     case MAPPER_SC3000_Survivors_Multicart:
@@ -597,6 +1153,18 @@ void    Machine_Set_TV_Lines(void)
     else
         g_machine.TV = TV_Type_User;
     g_machine.TV_lines = g_machine.TV->screen_lines;
+}
+
+// RESET EMULATED CPU ---------------------------------------------------------
+void        Machine_Reset_Z80(void)
+{
+#ifdef MARAT_Z80
+    ResetZ80 (&sms.R);
+#elif MAME_Z80
+    z80_reset (NULL);
+#elif RAZE_Z80
+    z80_reset();
+#endif
 }
 
 // RESET EMULATED MACHINE -----------------------------------------------------

@@ -16,6 +16,8 @@
 #include "vmachine.h"
 #include "sound/fmunit.h"
 #include "sound/psg.h"
+#include "video.h"
+#include "app_game.h"
 
 //-----------------------------------------------------------------------------
 // Functions
@@ -26,6 +28,7 @@ void        Load_Game_Fixup(void)
 {
     int     i;
     u8      b;
+    bool    sms_gg_mode_in_mapper = false;
 
     // CPU
     #ifdef MARAT_Z80
@@ -144,6 +147,191 @@ void        Load_Game_Fixup(void)
         case MAPPER_SMS_Korean_MSX_32KB_2000:
             WrZ80_NoHook(0x2000, g_machine.mapper_regs[0]);
             break;
+        case MAPPER_SMS_Korean_MSX_16KB_BFFE:
+            WrZ80_NoHook(0xBFFE, g_machine.mapper_regs[0]);
+            break;
+        case MAPPER_SMS_Korean_MSX_16KB_FFFF:
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[0]);
+            break;
+        case MAPPER_GG_Super_12_in_1_FFFE:
+            if (1) {
+                const int in_menu_mode = (g_machine.mapper_regs[0] & 0x08) == 0x00;
+                const int mapbase = g_machine.mapper_regs[0] & 0xF1;
+                const int reg1 = g_machine.mapper_regs[2] & 0x1F;
+                const int reg0 = g_machine.mapper_regs[1] & 0x1F;
+                WrZ80_NoHook(0xFFFE, 0xE0); // Meka extension: mapper reset to menu mode
+                WrZ80_NoHook(0xFFFE, 0x40 | ((mapbase & 0xE0) >> 4) | (mapbase & 0x01));
+                WrZ80_NoHook(0xFFFE, mapbase & 0x10);
+                if (in_menu_mode) {
+                    // Meka extension: reliable mapper register restoration in menu mode
+                    WrZ80_NoHook(0xFFFE, 0x80 | reg1);
+                    WrZ80_NoHook(0xFFFF, reg0);
+                } else {
+                    WrZ80_NoHook(0xFFFF, 0x40);
+                    WrZ80_NoHook(0xFFFE, reg1);
+                    WrZ80_NoHook(0xFFFF, reg0);
+                }
+            }
+            break;
+        case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+            if (1) {
+                unsigned int mapper_mode = g_machine.mapper_regs[0];
+                unsigned int slot_8000_page_offset_16k = g_machine.mapper_regs[1];
+                unsigned int slot_4000_page_offset_16k = g_machine.mapper_regs[2];
+                unsigned int game_number = g_machine.mapper_regs[3];
+                WrZ80_NoHook(0xBFFF, 0x0C);
+                WrZ80_NoHook(0xFFFF, game_number);
+                WrZ80_NoHook(0xBFFF, mapper_mode);
+                WrZ80_NoHook(0xFFFF, slot_8000_page_offset_16k);
+                WrZ80_NoHook(0xFFFE, slot_4000_page_offset_16k);
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Turbo_9_in_1_8000_4000:
+            if (1) {
+                unsigned int base_page_16k = g_machine.mapper_regs[0];
+                unsigned int page_8000_offset_16k = g_machine.mapper_regs[1];
+                unsigned int page_4000_offset_16k = g_machine.mapper_regs[2];
+                // use of 0x80 to return to the initial state is a Meka
+                // extension but does not conflict with the menu code's
+                // use of the mapper, nor does it conflict with the one
+                // game that uses the mapper
+                WrZ80_NoHook(0x8000, 0x80);
+                WrZ80_NoHook(0x4000, 0x11);
+                WrZ80_NoHook(0x8000, base_page_16k);
+                WrZ80_NoHook(0x4000, 0x11);
+                WrZ80_NoHook(0x4000, page_4000_offset_16k);
+                WrZ80_NoHook(0x8000, page_8000_offset_16k);
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Gear_20_in_1_FFFF_FFFE_button:
+            SRAM[0x7FFF] = 0xAA;
+            SRAM[0x7FFE] = g_machine.mapper_regs[0];
+            // FIXME: don't know yet how the mapper decides which games need SMS-GG mode
+            if ((g_machine.mapper_regs[0] <= 0x1F) | ((g_machine.mapper_regs[0] >= 0x38) && (g_machine.mapper_regs[0] <= 0x3E))) {
+                drv_set(DRV_GG);
+            } else {
+                drv_set(DRV_SMS);
+            }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
+            Map_8k_ROM(0, ((g_machine.mapper_regs[0]) * 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, ((g_machine.mapper_regs[0]) * 2 + 1) & tsms.Pages_Mask_8k);
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[2]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF:
+            if (1) {
+                bool sega_mapper_active = g_machine.mapper_regs[0] & 0x80;
+                bool second_megabyte_active = g_machine.mapper_regs[0] & 0x20;
+                unsigned int base_page_32k = g_machine.mapper_regs[0] & 0x1F;
+                unsigned int reg_FFF8 = g_machine.mapper_regs[5];
+                unsigned int reg_FFF9 = g_machine.mapper_regs[4];
+                unsigned int reg_FFFA = g_machine.mapper_regs[3];
+                unsigned int reg_FFFE = g_machine.mapper_regs[2];
+                unsigned int reg_FFFF = g_machine.mapper_regs[1];
+                WrZ80_NoHook(0xFFF9, 0x00);
+                WrZ80_NoHook(0xFFF8, 0x00);
+                WrZ80_NoHook(0xFFFA, 0x01);
+                WrZ80_NoHook(0xFFF8, base_page_32k);
+                WrZ80_NoHook(0xFFF9, (reg_FFF9 & 0x80) | ((sega_mapper_active && second_megabyte_active) ? 0x12 : 0x00) | ((sega_mapper_active && !second_megabyte_active) ? 0x0C : 0x00));
+                WrZ80_NoHook(0xFFFA, (reg_FFFA & 0x01) | ((sega_mapper_active && second_megabyte_active) ? 0x04 : 0x00));
+                WrZ80_NoHook(0xFFFE, 0x01);
+                if (g_machine.mapper_regs[1] != reg_FFFF) {
+                    WrZ80_NoHook(0xFFFF, reg_FFFF);
+                }
+                if (g_machine.mapper_regs[2] != reg_FFFE) {
+                    WrZ80_NoHook(0xFFFE, reg_FFFE);
+                }
+                if (g_machine.mapper_regs[4] != reg_FFF9) {
+                    WrZ80_NoHook(0xFFF9, reg_FFF9);
+                }
+                if (g_machine.mapper_regs[5] != reg_FFF8) {
+                    WrZ80_NoHook(0xFFF8, reg_FFF8);
+                }
+                if (g_machine.mapper_regs[3] != reg_FFFA) {
+                    WrZ80_NoHook(0xFFFA, reg_FFFA);
+                }
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Super_73_in_1_FFFE_FFFF:
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[2]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_Super_73_in_1_8000_4000:
+            WrZ80_NoHook(0x4000, g_machine.mapper_regs[1]);
+            WrZ80_NoHook(0x8000, g_machine.mapper_regs[2]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_Super_GG_30_1FFx_FFFx:
+            if (1) {
+                unsigned int mapper_mode_upper_1FFF = g_machine.mapper_regs[0];
+                unsigned int mapper_mode_lower_1FFE = g_machine.mapper_regs[1];
+                unsigned int slot_8000_page_offset_16k_FFFF = g_machine.mapper_regs[2];
+                unsigned int slot_4000_page_offset_16k_FFFE = g_machine.mapper_regs[3];
+                unsigned int slot_8000_base_16k_FFFF = g_machine.mapper_regs[4];
+                unsigned int slot_0000_4000_base_16k_FFFE = g_machine.mapper_regs[5];
+                WrZ80_NoHook(0x1FFE, 0x00);
+                WrZ80_NoHook(0x1FFF, 0x00);
+                WrZ80_NoHook(0x1FFE, 0x04);
+                WrZ80_NoHook(0xFFFF, slot_8000_base_16k_FFFF);
+                WrZ80_NoHook(0xFFFE, slot_0000_4000_base_16k_FFFE);
+                WrZ80_NoHook(0x1FFE, 0x00);
+                WrZ80_NoHook(0x1FFF, 0x00);
+                WrZ80_NoHook(0xFFFF, slot_8000_page_offset_16k_FFFF);
+                WrZ80_NoHook(0xFFFE, slot_4000_page_offset_16k_FFFE);
+                WrZ80_NoHook(0x1FFE, mapper_mode_lower_1FFE);
+                WrZ80_NoHook(0x1FFF, mapper_mode_upper_1FFF);
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Super_Gear_23_in_1_FFFE_FFFF:
+            if (1) {
+                unsigned int mapper_mode = g_machine.mapper_regs[0];
+                unsigned int slot_8000_page_offset_16k_FFFF = g_machine.mapper_regs[1];
+                unsigned int slot_4000_page_offset_16k_FFFE = g_machine.mapper_regs[2];
+                g_machine.mapper_regs[0] = 0x00;
+                g_machine.mapper_regs[1] = 0x00;
+                g_machine.mapper_regs[2] = 0x00;
+                WrZ80_NoHook(0xFFFE, mapper_mode & 0x03);
+                WrZ80_NoHook(0xFFFE, 0x04 | ((mapper_mode & 0x0C) >> 2));
+                WrZ80_NoHook(0xFFFE, 0x08 | ((mapper_mode & 0x30) >> 4));
+                if (mapper_mode & 0x80) {
+                    // "Sega mode"
+                    WrZ80_NoHook(0xFFFF, 0x08);
+                    WrZ80_NoHook(0xFFFF, slot_8000_page_offset_16k_FFFF);
+                    WrZ80_NoHook(0xFFFE, slot_4000_page_offset_16k_FFFE);
+                }
+                g_machine.mapper_regs[0] = mapper_mode;
+                g_machine.mapper_regs[1] = slot_8000_page_offset_16k_FFFF;
+                g_machine.mapper_regs[2] = slot_4000_page_offset_16k_FFFE;
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Super_GG_18_in_1_FFF8_FFFE:
+            if (1) {
+                int mapper_mode = g_machine.mapper_regs[0];
+                g_machine.mapper_regs[0] = 0;
+                WrZ80_NoHook(0xFFF8, mapper_mode);
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1:
+            WrZ80_NoHook(0xFFF8, g_machine.mapper_regs[2]);
+            WrZ80_NoHook(0xFFF9, g_machine.mapper_regs[3]);
+            WrZ80_NoHook(0xFFFA, g_machine.mapper_regs[4]);
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[0]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[1]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_SMS_Korean_SMS_32KB_2000:
+            WrZ80_NoHook(0x2000, g_machine.mapper_regs[0]);
+            break;
         case MAPPER_SMS_Korean_MSX_SMS_8000:
             {
                 int mapper_page = g_machine.mapper_regs[0];
@@ -151,13 +339,151 @@ void        Load_Game_Fixup(void)
                 WrZ80_NoHook(0x8000, mapper_page);
             }
             break;
+        case MAPPER_GG_Super_68_in_1_FFFE_FFFF:
+            if (1) {
+                unsigned int game_id = g_machine.mapper_regs[0];
+                unsigned int slot_8000_page_offset_16k_FFFF = g_machine.mapper_regs[1];
+                unsigned int slot_4000_page_offset_16k_FFFE = g_machine.mapper_regs[2];
+                unsigned int mapper_mode = g_machine.mapper_regs[3];
+                // mapper is initially in GG mode
+                drv_set(DRV_GG);
+                g_machine.mapper_regs[0] = 0x00;
+                g_machine.mapper_regs[1] = 0x00;
+                g_machine.mapper_regs[2] = 0x00;
+                g_machine.mapper_regs[3] = 0x00;
+                if (mapper_mode & 0x08) {
+                    // "heuristic mode" for SMS-GG determination
+                    WrZ80_NoHook(0xFFFE, 0x06);
+                }
+                // low two bits of game ID (also locks in "heuristic mode" bit)
+                WrZ80_NoHook(0xFFFE, game_id & 0x03);
+                // lower middle two bits of game ID
+                WrZ80_NoHook(0xFFFE, 0x04 | ((game_id & 0x0C) >> 2));
+                // upper middle two bits of game ID
+                WrZ80_NoHook(0xFFFE, 0x08 | ((game_id & 0x30) >> 4));
+                if ((mapper_mode & 0x0C) || (game_id & 0xC0)) {
+                    // high two bits of game ID
+                    //
+                    // ... and also ...
+                    //
+                    // "use game_id & 0x40" for SMS-GG determination
+                    // when not in heuristic mode
+                    WrZ80_NoHook(0xFFFE, 0x0C | ((game_id & 0xC0) >> 6));
+                }
+                if (mapper_mode & 0x80) {
+                    // "Sega mode"
+                    WrZ80_NoHook(0xFFFF, 0x08);
+                    WrZ80_NoHook(0xFFFF, slot_8000_page_offset_16k_FFFF);
+                    WrZ80_NoHook(0xFFFE, slot_4000_page_offset_16k_FFFE);
+                }
+                g_machine.mapper_regs[0] = game_id;
+                g_machine.mapper_regs[1] = slot_8000_page_offset_16k_FFFF;
+                g_machine.mapper_regs[2] = slot_4000_page_offset_16k_FFFE;
+                g_machine.mapper_regs[3] = mapper_mode;
+                gamebox_resize_all();
+                VDP_UpdateLineLimits();
+                Video_GameMode_UpdateBounds();
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_Gear_6_in_1_FFFE_FFF7_FFFF:
+            // rewriting these will automatically read and apply the hidden register's state
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[2]);
+            break;
+        case MAPPER_GG_Super_9_in_1_FFFE_FFF7_FFFF:
+            // rewriting these will automatically read and apply the hidden register's state
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[2]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_SMS_Meta_Power_FFFF_HiCom:
+            if (true) {
+                SRAM[0x7FFF] = 0xAA;
+                SRAM[0x7FFE] = g_machine.mapper_regs[0];
+                unsigned int base_page_8k = (g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 4;
+                Map_8k_ROM(4, base_page_8k & tsms.Pages_Mask_8k);
+                Map_8k_ROM(5, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+                WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            }
+            break;
+        case MAPPER_SMS_Power_256KB_FFFF_FFFE:
+            if (true) {
+                SRAM[0x7FFF] = 0xAA;
+                SRAM[0x7FFE] = g_machine.mapper_regs[0];
+                unsigned int base_page_8k = g_machine.mapper_regs[0] * 2;
+                Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+                Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+                WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+                WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[2]);
+            }
+            break;
+        case MAPPER_GG_48_in_1_FFF8_FFF9_FFFE_FFFF:
+            // Re-writing these registers will have the side-effect of
+            // re-applying all the rest of the memory mapper state too
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[2]);
+            WrZ80_NoHook(0xFFFE, g_machine.mapper_regs[3]);
+            break;
+        case MAPPER_GG_18_in_1_00xx:
+            WrZ80_NoHook(0x0000 | g_machine.mapper_regs[0], 0x00);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_Super_16_in_1_Columns_FFFx:
+            if (1) {
+                // these mapper writes will configure SMS-GG mode if needed
+                unsigned int mode_bits = g_machine.mapper_regs[0] & 0xF0;
+                unsigned int base_page_32k = g_machine.mapper_regs[0] & 0x0F;
+                unsigned int page_8000_offset_16k = g_machine.mapper_regs[1];
+                unsigned int page_4000_offset_16k = g_machine.mapper_regs[2];
+
+                // restore "sega" mode paging registers
+                WrZ80_NoHook(0xFFFF, page_8000_offset_16k);
+                WrZ80_NoHook(0xFFFE, page_4000_offset_16k);
+
+                // use 0xFFF8 for the rest of the writes to prevent
+                // paging register aliasing (not sure whether real
+                // hardware works this way, but our implementaiton
+                // does)
+
+                // configure base page
+                WrZ80_NoHook(0xFFF8, 0xC0);
+                WrZ80_NoHook(0xFFF8, 0x40 | ((base_page_32k & 0x0C) << 2));
+                WrZ80_NoHook(0xFFF8, 0x00 | ((base_page_32k & 0x03) << 4));
+
+                // restore SMS-GG mode if needed
+                WrZ80_NoHook(0xFFF8, 0x80 | (mode_bits & 0x30));
+
+                // restore "sega" mode if needed
+                WrZ80_NoHook(0xFFF8, 0xC0 | ((mode_bits & 0xC0) >> 2));
+
+                sms_gg_mode_in_mapper = true;
+            }
+            break;
+        case MAPPER_GG_30_in_1_FFF6_FFFE_FFF7_FFFF:
+        case MAPPER_GG_52_in_1_FFF6_FFFE_FFF7_FFFF:
+            // this will restore every other piece of mapper state by side-effect;
+            // this will also configure SMS-GG mode if needed
+            WrZ80_NoHook(0xFFFF, g_machine.mapper_regs[1]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_Real_24_in_1_FFFE_0000_FFFF:
+            // this will restore every other piece of mapper state by side-effect;
+            // this will also configure SMS-GG mode if needed
+            WrZ80_NoHook(0x0000, g_machine.mapper_regs[0]);
+            sms_gg_mode_in_mapper = true;
+            break;
+        case MAPPER_GG_Homebrew_FFF2:
+            WrZ80_NoHook(0xFFF2, g_machine.mapper_regs[0]);
+            break;
         }
     }
 
     // VDP/Graphic related
-    tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
-    VDP_UpdateLineLimits();
-    // FALSE!!! // tsms.VDP_Line = 224;
+    if (!sms_gg_mode_in_mapper) {
+        tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
+        VDP_UpdateLineLimits();
+        // FALSE!!! // tsms.VDP_Line = 224;
+    }
 
     // Rewrite all VDP registers (we can do that since it has zero side-effect)
     for (i = 0; i < 16; i ++)
@@ -346,7 +672,33 @@ int     Save_Game_MSV(FILE *f)
     case MAPPER_SMS_Korean_MD_FFF5:
     case MAPPER_SMS_Korean_MD_FFFA:
     case MAPPER_SMS_Korean_MSX_32KB_2000:
+    case MAPPER_GG_Super_12_in_1_FFFE:
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+    case MAPPER_GG_Turbo_9_in_1_8000_4000:
+    case MAPPER_GG_Gear_20_in_1_FFFF_FFFE_button:
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF:
+    case MAPPER_GG_Super_73_in_1_FFFE_FFFF:
+    case MAPPER_GG_Super_73_in_1_8000_4000:
+    case MAPPER_GG_Super_GG_30_1FFx_FFFx:
+    case MAPPER_GG_Super_Gear_23_in_1_FFFE_FFFF:
+    case MAPPER_GG_Super_GG_18_in_1_FFF8_FFFE:
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1:
+    case MAPPER_SMS_Korean_SMS_32KB_2000:
     case MAPPER_SMS_Korean_MSX_SMS_8000:
+    case MAPPER_GG_Super_68_in_1_FFFE_FFFF:
+    case MAPPER_GG_Gear_6_in_1_FFFE_FFF7_FFFF:
+    case MAPPER_GG_Super_9_in_1_FFFE_FFF7_FFFF:
+    case MAPPER_SMS_Korean_MSX_16KB_BFFE:
+    case MAPPER_SMS_Korean_MSX_16KB_FFFF:
+    case MAPPER_SMS_Meta_Power_FFFF_HiCom:
+    case MAPPER_SMS_Power_256KB_FFFF_FFFE:
+    case MAPPER_GG_48_in_1_FFF8_FFF9_FFFE_FFFF:
+    case MAPPER_GG_18_in_1_00xx:
+    case MAPPER_GG_Super_16_in_1_Columns_FFFx:
+    case MAPPER_GG_30_in_1_FFF6_FFFE_FFF7_FFFF:
+    case MAPPER_GG_52_in_1_FFF6_FFFE_FFF7_FFFF:
+    case MAPPER_GG_Real_24_in_1_FFFE_0000_FFFF:
+    case MAPPER_GG_Homebrew_FFF2:
     default:
         fwrite (RAM, 0x2000, 1, f); // Do not use g_driver->ram because of g_driver video mode change
         break;
@@ -526,7 +878,33 @@ int         Load_Game_MSV(FILE *f)
     case MAPPER_SMS_Korean_MD_FFF5:
     case MAPPER_SMS_Korean_MD_FFFA:
     case MAPPER_SMS_Korean_MSX_32KB_2000:
+    case MAPPER_GG_Super_12_in_1_FFFE:
+    case MAPPER_GG_Super_GG_15_BFFF_FFFF:
+    case MAPPER_GG_Turbo_9_in_1_8000_4000:
+    case MAPPER_GG_Gear_20_in_1_FFFF_FFFE_button:
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF:
+    case MAPPER_GG_Super_73_in_1_FFFE_FFFF:
+    case MAPPER_GG_Super_73_in_1_8000_4000:
+    case MAPPER_GG_Super_GG_30_1FFx_FFFx:
+    case MAPPER_GG_Super_Gear_23_in_1_FFFE_FFFF:
+    case MAPPER_GG_Super_GG_18_in_1_FFF8_FFFE:
+    case MAPPER_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1:
+    case MAPPER_SMS_Korean_SMS_32KB_2000:
     case MAPPER_SMS_Korean_MSX_SMS_8000:
+    case MAPPER_GG_Super_68_in_1_FFFE_FFFF:
+    case MAPPER_GG_Gear_6_in_1_FFFE_FFF7_FFFF:
+    case MAPPER_GG_Super_9_in_1_FFFE_FFF7_FFFF:
+    case MAPPER_SMS_Korean_MSX_16KB_BFFE:
+    case MAPPER_SMS_Korean_MSX_16KB_FFFF:
+    case MAPPER_SMS_Meta_Power_FFFF_HiCom:
+    case MAPPER_SMS_Power_256KB_FFFF_FFFE:
+    case MAPPER_GG_48_in_1_FFF8_FFF9_FFFE_FFFF:
+    case MAPPER_GG_18_in_1_00xx:
+    case MAPPER_GG_Super_16_in_1_Columns_FFFx:
+    case MAPPER_GG_30_in_1_FFF6_FFFE_FFF7_FFFF:
+    case MAPPER_GG_52_in_1_FFF6_FFFE_FFF7_FFFF:
+    case MAPPER_GG_Real_24_in_1_FFFE_0000_FFFF:
+    case MAPPER_GG_Homebrew_FFF2:
     default:
         fread (RAM, 0x2000, 1, f); // Do not use g_driver->ram because of g_driver video mode change
         break;

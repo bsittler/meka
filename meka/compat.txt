@@ -16,6 +16,8 @@
  SMS-GG:    This version is a GG cartridge using the SMS compatibility mode
  SMS-MD:    This version is an MD cartridge using the SMS compatibility mode
 -----------------------------------------------------------------------------
+ 11 Hap Gam-Boy (KR)                            -      *Ok
+ 12 in 1 [Hang On] [SMS-GG] (Unl)               -      *Ok
  128 Hap (KR)                                   -      *Ok
  2 Hap in 1 (Moai-ui bomul, David-2) (KR)       -      *Ok
  20 em 1 (BR)                                   -       Ok
@@ -286,6 +288,14 @@
  Hi-Com 3-in-1 The Best Game Collection D (KR)  -       Ok
  Hi-Com 3-in-1 The Best Game Collection E (KR)  -       Ok
  Hi-Com 3-in-1 The Best Game Collection F (KR)  -       Ok
+ Hi-Com 3-in-1 The Best Game Collection G (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection A (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection B (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection C (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection D (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection E (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection F (KR)  -      *Ok
+ Hi-Com 4-in-1 The Best Game Collection G (KR)  -      *Ok
  Hi-Com 8-in-1 The Best Game Collection A (KR)  -       Ok
  Hi-Com 8-in-1 The Best Game Collection B (KR)  -       Ok
  Hi-Com 8-in-1 The Best Game Collection C (KR)  -       Ok
@@ -549,6 +559,9 @@
  Summer Games [Proto 0]                         -       Ok (No audio)
  Summer Games [Proto 1]                         FM      Ok
  Suho Jeonsa (KR)                               -       Ok
+ Super 12 in 1 [Teddy Boy] [SMS-MD] (Unl)       -      *Ok
+ Super 2 in 1 - Double Dragon, Ghouls'n Ghosts [SMS-GG] - *Ok
+ Super 2 in 1 - Sonic & Alien Storm [SMS-GG]    -      *Ok
  Super Basketball [Demo]                        -       Ok
  Super Bioman I (KR)                            -       Ok
  Super Boy I (KR)                               -       Ok
@@ -558,7 +571,9 @@
  Super Bubble Bobble (KR)                       -       Ok
  Super Columns (KR)                             -       Ok
  Super Futebol II [Game Box Série Esportes] (BR)-       Ok
- Super Game 45 (KR)                             -       Ok
+ Super Game 30 [Road Fighter] [Super Game 45] (KR)-    *Ok
+ Super Game 45 [Road Fighter] (KR)              -      *Ok
+ Super Game 45 [Teddy Boy] (KR)                 -       Ok
  Super Game 52 Hap (KR)                         -       Ok
  Super Game 150 (KR)                            -      *Ok
  Super Game 180 (KR)                            -      *Ok
@@ -623,6 +638,7 @@
  Ultima IV                                      FM      Ok
  Ultima IV [Proto]                              FM      Ok
  Ultimate Soccer                                -       Ok
+ Untitled 4-in-1 (Moonwalker, Double Dragon, Sagaia & Spider-Man) [SMS-GG] - *Ok
  Vigilante                                      FM      Ok
  Virtua Fighter Animation                       -       Ok
  Walter Payton Football                         -       Ok
@@ -676,7 +692,7 @@
  Zillion II: The Tri Formation [Proto]          FM      Ok
  Zool                                           -       Ok
 -----------------------------------------------------------------------------
- 655 games tested - 651 are "Ok"
+ 671 games tested - 667 are "Ok"
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -984,6 +1000,7 @@
 -----------------------------------------------------------------------------
  SEGA GAME GEAR (GG) COMPATIBILITY LIST
 -----------------------------------------------------------------------------
+ 18 in 1 - Super Games Collection [Columns]        *Ok
  5 in One Fun Pak                                   Ok
  Aa Harimanada (JP)                                 Ok
  Addams Family, The                                 Ok
@@ -1137,17 +1154,24 @@
  Galaga '91 (JP)                                    Ok
  Gamble Panic (JP)                                  Ok
  Gambler Jikochuushin Ha (JP)                       Ok
+ Game Gear Super 16 in 1 ~ Wudi Xilie [Columns]    *Ok
  Garou Densetsu Special (JP)                        Ok
  Ganbare Gorby! (JP)                                Ok
  Garfield: Caught in the Act                        Ok
+ Gear 6 in 1 [Alien Syndrome]                      *Ok
+ Gear 30 in 1 [Sonic]                              *Ok
+ Gear 52 in 1 [Sonic]                              *Ok
  Gear Stadium (JP)                                  Ok
  Gear Stadium Heiseiban (JP)                        Ok
  Gear Works                                         Ok
  George Foreman's KO Boxing                         Ok
+ GG 48 in 1 [Doraemon 2]                           *Ok
  GG Aleste (JP)                                     Ok
  GG Portrait - Pai Chen (JP)                        Ok
  GG Portrait - Yuuki Akira (JP)                     Ok
  GG Shinobi, The (JP)                               Ok
+ GG Super 56 in 1 (B) [Mega Man]                   *Ok
+ GG Super 68 in 1 [Asterix]                        *Ok
  Global Gladiators                                  Ok
  G-LOC - Air Battle                                 Ok
  G-LOC - Air Battle [v0] (JP)                       Ok
@@ -1334,6 +1358,7 @@
  Quiz Gear Fight!!, The (JP)                        Ok
  Rastan Saga [SMS-GG] (JP)                          Ok
  R.C. Grand Prix [SMS-GG]                           Ok
+ Real 24 in 1 [Sonic II]                           *Ok
  Revenge of Drancon                                 Ok
  Riddick Rowe Boxing (US)                           Ok
  Riddick Rowe Boxing (JP)                           Ok
@@ -1409,9 +1434,32 @@
  Street Hero [Proto 1] [SMS-GG]                     Ok
  Strider Returns                                    Ok
  Striker                                            Ok
+ Super 5 in 1 Game Gear [Mortal Kombat] [Super 12 in 1] *Ok
+ Super 7 in 1 Game Gear [Bare Knuckle 2] [Super 12 in 1] *Ok
+ Super 12 in 1 Game Gear [Bare Knuckle 2]          *Ok
+ Super 12 in 1 Game Gear [Mortal Kombat]           *Ok
+ Super 18 in 1 - 1993 New Game [Columns]           *Ok
+ Super 21 in 1 [Pacmania] [Super 53 in 1]          *Ok
+ Super 32 in 1 [Alien 3] [Super 53 in 1]           *Ok
+ Super 53 in 1 [Alien 3]                           *Ok
+ Super 53 in 1 [Pacmania]                          *Ok
+ Super 68 in 1 [Simpson]                           *Ok
  Super Battletank                                   Ok
  Super Columns                                      Ok
  Super Columns (JP)                                 Ok
+ Super Game Gear 9 in 1 [Sonic II]                 *Ok
+ Super Game Gear 73 in 1 [Sonic 2]                 *Ok
+ Super Game Gear 73 in 1 [Street Fighter 2]        *Ok
+ Super Gear 20 in 1 [Ninja Gaiden]                 *Ok
+ Super Gear 23 in 1 [Ninja Gaiden]                 *Ok
+ Super GG 15 [Cliffhanger] [Gold & Yellow Label]   *Ok
+ Super GG 15 [Last Action] [Super GG 30 Gold & Green Label] *Ok
+ Super GG 15 in 1 [Sonic 5]                        *Ok
+ Super GG 18 in 1 [Nettou Samurai]                 *Ok
+ Super GG 21 in 1 [Sonic Drift] [Gold & Yellow Label] *Ok
+ Super GG 30 [Last Action] [Gold & Green Label]    *Ok
+ Super GG 30 in 1 [Sonic 2] [Gold & Yellow Label]  *Ok
+ Super GG 68 in 1 [Sonic Adventure]                *Ok
  Super Golf (JP)                                    Ok
  Super Kick Off [SMS-GG]                            Ok
  Superman - The Man of Steel                        Ok
@@ -1458,6 +1506,7 @@
  Tom and Jerry: The Movie (JP)                      Ok
  Torarete Tamaruka!? (JP)                           Ok
  True Lies                                          Ok
+ Turbo 9 in 1 [Street Fighter 2]                   *Ok
  Ultimate Soccer                                    Ok
  Urban Strike                                       Ok
  Vampire - Master of Darkness (US)                  Ok
@@ -1472,6 +1521,7 @@
  Winter Olympics / Winter Olympics Games            Ok
  Winter Olympics (JP)                               Ok
  Wizard Pinball                                     Ok
+ Wise Gear GG 32 in 1 [Nettou Samurai]             *Ok
  Wolfchild                                          Ok
  Wonder Boy                                         Ok
  Wonder Boy (JP)                                    Ok
@@ -1502,7 +1552,7 @@
  Zoop (US)                                          Ok
  Zoop [Proto] (US)                                  Ok
 -----------------------------------------------------------------------------
- 517 games tested - 506 are "Ok" - Compatibility rate: 97.63%
+ 551 games tested - 540 are "Ok" - Compatibility rate: 98.00%
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------

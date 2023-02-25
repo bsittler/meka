@@ -14,6 +14,9 @@
 #include "shared.h"
 #include "mappers.h"
 #include "eeprom.h"
+#include "vdp.h"
+#include "video.h"
+#include "app_game.h"
 
 //-----------------------------------------------------------------------------
 // Data
@@ -952,6 +955,666 @@ WRITE_FUNC (Write_Mapper_SMS_Korean_MSX_32KB_2000)
     Write_Error (Addr, Value);
 }
 
+// Mapper #28
+//
+// Super 5 in 1 Game Gear [Mortal Kombat] [Super 12 in 1]
+// Super 7 in 1 Game Gear [Bare Knuckle 2] [Super 12 in 1]
+// Super 12 in 1 Game Gear [Mortal Kombat] (Unl)
+// Super 12 in 1 Game Gear [Bare Knuckle 2] (Unl)
+WRITE_FUNC (Write_Mapper_GG_Super_12_in_1_FFFE)
+{
+    if ((Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        int in_menu_mode = (g_machine.mapper_regs[0] & 0x08) == 0x00;
+        if (Addr == 0xFFFE) {
+            if (in_menu_mode && ((Value & 0xF0) == 0x40)) {
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0x1E) | (Value & 0x0E) << 4 | (Value & 0x01);
+            } else if (in_menu_mode && ((Value & 0xE0) == 0x00)) {
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0xF0) | ((Value & 0x10) >> 4);
+            } else {
+                g_machine.mapper_regs[2] = Value & 0x1F;
+            }
+        }
+        if (Addr == 0xFFFF) {
+            if (in_menu_mode && ((Value & 0xF0) == 0x40)) {
+                g_machine.mapper_regs[0] |= 0x08;
+                in_menu_mode = 0;
+            } else if ((!in_menu_mode) && ((Value & 0xE0) == 0xE0)) {
+                // Meka extension: this is used to reliably reset the
+                // mapper to menu mode when loading save states
+                g_machine.mapper_regs[0] &= ~0x08;
+                in_menu_mode = 1;
+            }
+            g_machine.mapper_regs[1] = Value & 0x1F;
+        }
+        const int effective_mapbase = (g_machine.mapper_regs[0] & 0xF0) | ((g_machine.mapper_regs[0] & 0x01) << 4);
+        const int fixed_or_reg1 = in_menu_mode ? 1 : (g_machine.mapper_regs[2] & 0x1F);
+        const int fixed_or_reg0 = in_menu_mode ? 0 : (g_machine.mapper_regs[1] & 0x1F);
+        Map_8k_ROM(0, (effective_mapbase << 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((effective_mapbase << 1) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((effective_mapbase | fixed_or_reg1) << 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((effective_mapbase | fixed_or_reg1) << 1) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((effective_mapbase | fixed_or_reg0) << 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (((effective_mapbase | fixed_or_reg0) << 1) | 1) & tsms.Pages_Mask_8k);
+        //return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+} 
+
+// Mapper #29
+// Super GG 15 [Cliffhanger] [Gold & Yellow Label]
+WRITE_FUNC(Write_Mapper_GG_Super_GG_15_BFFF_FFFF)
+{
+    // TODO: implement the various restrictions found in the hardware,
+    // e.g. requiring mode bit 0x04 to access the second 512KB of the
+    // ROM.
+    if ((Addr == 0xBFFF) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xBFFF) {
+            unsigned int high_page_offset = 0;
+            if (g_machine.mapper_regs[0] == 0x0c) {
+                unsigned int mask = (g_machine.mapper_regs[1] & 0xF0) ? 0xF0 : 0xFE;
+                g_machine.mapper_regs[3] = g_machine.mapper_regs[1] & mask;
+                if (mask == 0xF0) {
+                    high_page_offset = g_machine.mapper_regs[1] & 0x0F;
+                }
+            }
+            g_machine.mapper_regs[0] = Value;
+            g_machine.mapper_regs[1] = high_page_offset;
+            g_machine.mapper_regs[2] = 1;
+            if (Value & 0x10) {
+                drv_set(DRV_SMS);
+            } else {
+                drv_set(DRV_GG);
+            }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
+        }
+        else if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[1] = Value;
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[2] = Value;
+        }
+        Map_8k_ROM(0, (g_machine.mapper_regs[3] * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (g_machine.mapper_regs[3] * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (g_machine.mapper_regs[3] * 2 + g_machine.mapper_regs[2] * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (g_machine.mapper_regs[3] * 2 + g_machine.mapper_regs[2] * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, (g_machine.mapper_regs[3] * 2 + g_machine.mapper_regs[1] * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (g_machine.mapper_regs[3] * 2 + g_machine.mapper_regs[1] * 2 + 1) & tsms.Pages_Mask_8k);
+        if (Addr == 0xBFFF) {
+            // no RAM shadowing for writes to this address
+            return;
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #30
+// Turbo 9 in 1 [Street Fighter 2]
+WRITE_FUNC(Write_Mapper_GG_Turbo_9_in_1_8000_4000)
+{
+    if (Addr == 0x8000 || Addr == 0x4000) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0x8000) {
+            g_machine.mapper_regs[1] = Value;
+        }
+        if (Addr == 0x4000) {
+            g_machine.mapper_regs[2] = Value;
+        }
+        if ((g_machine.mapper_regs[2] == 0x11) && (g_machine.mapper_regs[0] == 0x80)) {
+            // use of 0x80 to signal the initial state is a Meka
+            // extension but does not conflict with the menu code's
+            // use of the mapper
+            g_machine.mapper_regs[0] = g_machine.mapper_regs[1];
+            g_machine.mapper_regs[1] = 0;
+            g_machine.mapper_regs[2] = 1;
+        } else if ((g_machine.mapper_regs[2] == 0x11) && (g_machine.mapper_regs[1] == 0x80)) {
+            // use of 0x80 to return to the initial state is a Meka
+            // extension but does not conflict with the menu code's
+            // use of the mapper, nor does it conflict with the one
+            // game that uses the mapper
+            g_machine.mapper_regs[0] = 0x80;
+            g_machine.mapper_regs[1] = 0;
+            g_machine.mapper_regs[2] = 1;
+        }
+        Map_8k_ROM(0, (g_machine.mapper_regs[0] * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (g_machine.mapper_regs[0] * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((g_machine.mapper_regs[0] + g_machine.mapper_regs[2]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((g_machine.mapper_regs[0] + g_machine.mapper_regs[2]) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 2 + 1) & tsms.Pages_Mask_8k);
+        // It is unclear how the cartridge decides whether to switch
+        // from native GG mode (which is the power-on default) to
+        // SMS-GG mode, but it appears to happen at the moment 0x11 is
+        // written to 0x4000 *unless* 0x0a was the most recent value
+        // previously written to 0x4000.
+        if ((g_machine.mapper_regs[0] != 0x80) && (g_machine.mapper_regs[0] != 0x0a)) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #31
+// Super Gear 20 in 1 [Ninja Gaiden]
+WRITE_FUNC(Write_Mapper_GG_Gear_20_in_1_FFFF_FFFE_button)
+{
+    // FIXME: don't know yet how the mapper decides which games need SMS-GG mode
+    if ((g_machine.mapper_regs[0] <= 0x1F) | ((g_machine.mapper_regs[0] >= 0x38) && (g_machine.mapper_regs[0] <= 0x3D))) {
+        drv_set(DRV_GG);
+    } else {
+        drv_set(DRV_SMS);
+    }
+    gamebox_resize_all();
+    VDP_UpdateLineLimits();
+    Video_GameMode_UpdateBounds();
+    if (Addr == 0xFFFF) // Configurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[1] = Value;
+        Map_8k_ROM(4, ((g_machine.mapper_regs[0] + Value) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((g_machine.mapper_regs[0] + Value) * 2 + 1) & tsms.Pages_Mask_8k);
+        //return;
+    }
+    if (Addr == 0xFFFE)
+    {
+        g_machine.mapper_regs[2] = Value;
+        Map_8k_ROM(2, ((g_machine.mapper_regs[0] + Value) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((g_machine.mapper_regs[0] + Value) * 2 + 1) & tsms.Pages_Mask_8k);
+        //return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #32
+// Super GG 68 in 1 [Sonic Adventure]
+// GG Super 56 in 1 (B) [Mega Man]
+WRITE_FUNC(Write_Mapper_GG_FFF8_FFF9_FFFA_FFFE_FFFF)
+{
+    if ((Addr == 0xFFF8) || (Addr == 0xFFF9) || (Addr == 0xFFFA) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF8) {
+            g_machine.mapper_regs[5] = Value;
+        } else if (Addr == 0xFFF9) {
+            g_machine.mapper_regs[4] = Value;
+        } else if (Addr == 0xFFFA) {
+            g_machine.mapper_regs[3] = Value;
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        }
+        if (Addr == 0xFFF8 || Addr == 0xFFFA) {
+            bool second_megabyte_active = (g_machine.mapper_regs[4] & 0x12) || (g_machine.mapper_regs[3] & 0x04);
+            bool sega_mapper_active = (g_machine.mapper_regs[4] & 0x1E) || (g_machine.mapper_regs[3] & 0x04);
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[5] & 0x1F) | (second_megabyte_active ? 0x20 : 0x00) | (sega_mapper_active ? 0x80 : 0x00);
+            bool sms_gg_mode_active = (g_machine.mapper_regs[4] & 0x80) || (g_machine.mapper_regs[3] & 0x01);
+            if (sms_gg_mode_active) {
+                drv_set(DRV_SMS);
+            } else {
+                drv_set(DRV_GG);
+            }
+        }
+        if (1) {
+            bool sega_mapper_active = g_machine.mapper_regs[0] & 0x80;
+            bool second_megabyte_active = g_machine.mapper_regs[0] & 0x20;
+            unsigned int sega_mapper_mask = sega_mapper_active ? (second_megabyte_active ? 0x1F : 0x0F) : 0x01;
+            unsigned int page_0000_8k = (g_machine.mapper_regs[0] & 0x3F) * 4;
+            unsigned int page_4000_8k = page_0000_8k + ((g_machine.mapper_regs[2] & sega_mapper_mask) * 2);
+            unsigned int page_8000_8k = page_0000_8k + ((g_machine.mapper_regs[1] & sega_mapper_mask) * 2);
+            Map_8k_ROM(0, page_0000_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (page_0000_8k | 0x01) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, page_4000_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (page_4000_8k | 0x01) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, page_8000_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (page_8000_8k | 0x01) & tsms.Pages_Mask_8k);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        //return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #33
+// Super Game Gear 73 in 1 [Sonic 2]
+WRITE_FUNC(Write_Mapper_GG_Super_73_in_1_FFFE_FFFF)
+{
+    if ((Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        }
+        if (! (g_machine.mapper_regs[0] & 0x40)) {
+            // "menu" mapping mode
+            if (g_machine.mapper_regs[2] & 0x40) {
+                // high-part mapper write
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[2] & 0x08) ? 0x80 : 0x00;  // SMS-GG mode flag
+                // upper two bits of MAPBASE
+                g_machine.mapper_regs[0] &= ~0x30;
+                g_machine.mapper_regs[0] |= (g_machine.mapper_regs[2] & 0x06) << 3;
+            } else {
+                // low-part mapper write (lower four bits of MAPBASE)
+                g_machine.mapper_regs[0] &= ~0x0F;
+                g_machine.mapper_regs[0] |= (g_machine.mapper_regs[2] & 0x1E) >> 1;
+            }
+            if (g_machine.mapper_regs[1] & 0x40) {
+                // switch to "game" mapping mode
+                g_machine.mapper_regs[0] |= 0x40;
+                g_machine.mapper_regs[1] = 0;
+                g_machine.mapper_regs[2] = 1;
+            }
+        }
+        unsigned int mapbase_16k = 0;
+        unsigned int page_4000_offset_16k = 1;
+        unsigned int page_8000_offset_16k = 0;
+        bool game_mapping_mode = g_machine.mapper_regs[0] & 0x40;
+        if (game_mapping_mode) {
+            mapbase_16k = (g_machine.mapper_regs[0] & 0x3F) * 2;
+            page_4000_offset_16k = g_machine.mapper_regs[2];
+            page_8000_offset_16k = g_machine.mapper_regs[1];
+        }
+        Map_8k_ROM(0, (mapbase_16k * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (mapbase_16k * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((mapbase_16k + page_4000_offset_16k) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((mapbase_16k + page_4000_offset_16k) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((mapbase_16k + page_8000_offset_16k) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((mapbase_16k + page_8000_offset_16k) * 2 + 1) & tsms.Pages_Mask_8k);
+        bool sms_gg_mode_active = g_machine.mapper_regs[0] & 0x80;
+        if (sms_gg_mode_active) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        //return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #34
+// Super Game Gear 73 in 1 [Street Fighter 2]
+WRITE_FUNC(Write_Mapper_GG_Super_73_in_1_8000_4000)
+{
+    if ((Addr == 0x8000) || (Addr == 0x4000)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0x8000) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0x4000) {
+            g_machine.mapper_regs[1] = Value;
+        }
+        if (! (g_machine.mapper_regs[0] & 0x40)) {
+            // "menu" mapping mode
+            if (g_machine.mapper_regs[2] & 0x40) {
+                // high-part mapper write
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[2] & 0x08) ? 0x80 : 0x00;  // SMS-GG mode flag
+                // upper two bits of MAPBASE
+                g_machine.mapper_regs[0] &= ~0x30;
+                g_machine.mapper_regs[0] |= (g_machine.mapper_regs[2] & 0x06) << 3;
+            } else {
+                // low-part mapper write (lower four bits of MAPBASE)
+                g_machine.mapper_regs[0] &= ~0x0F;
+                g_machine.mapper_regs[0] |= (g_machine.mapper_regs[2] & 0x1E) >> 1;
+            }
+            if (g_machine.mapper_regs[1] & 0x40) {
+                // switch to "game" mapping mode
+                g_machine.mapper_regs[0] |= 0x40;
+                g_machine.mapper_regs[2] = 0;
+                g_machine.mapper_regs[1] = 1;
+            }
+        }
+        unsigned int mapbase_16k = 0;
+        unsigned int page_4000_offset_16k = 1;
+        unsigned int page_8000_offset_16k = 0;
+        bool game_mapping_mode = g_machine.mapper_regs[0] & 0x40;
+        if (game_mapping_mode) {
+            mapbase_16k = (g_machine.mapper_regs[0] & 0x3F) * 2;
+            page_4000_offset_16k = g_machine.mapper_regs[1];
+            page_8000_offset_16k = g_machine.mapper_regs[2];
+        }
+        Map_8k_ROM(0, (mapbase_16k * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (mapbase_16k * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((mapbase_16k + page_4000_offset_16k) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((mapbase_16k + page_4000_offset_16k) * 2 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((mapbase_16k + page_8000_offset_16k) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((mapbase_16k + page_8000_offset_16k) * 2 + 1) & tsms.Pages_Mask_8k);
+        bool sms_gg_mode_active = g_machine.mapper_regs[0] & 0x80;
+        if (sms_gg_mode_active) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #35
+// Super GG 15 [Last Action] [Super GG 30 Gold & Green Label]
+// Super GG 30 [Last Action] [Gold & Green Label]
+WRITE_FUNC(Write_Mapper_GG_Super_GG_30_1FFx_FFFx)
+{
+    if ((Addr == 0x1FFE) || (Addr == 0xFFFE) || (Addr == 0xFFFF) || (Addr == 0x1FFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0x1FFF) {
+            // TODO: Value & 0x01 may be "Sega mode" mapper locking
+            // Value & 0x40 indicates chip select/output enable for 2nd half of each megabyte of ROM
+            // Value & 0x10 indicates SMS-GG mode as opposed to native GG mode
+            g_machine.mapper_regs[0] = Value;
+            if (Value & 0x10) {
+                drv_set(DRV_SMS);
+            } else {
+                drv_set(DRV_GG);
+            }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
+        }
+        else if (Addr == 0x1FFE)
+        {
+            // Value & 0x10 indicates chip select/output enable for 2nd megabyte of ROM
+            g_machine.mapper_regs[1] = Value;
+            // Value & 0x04 indicates "Sega mode" as opposed to "menu mode"
+        }
+        else if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[2] = Value;
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[3] = Value;
+        }
+        if (g_machine.mapper_regs[1] & 0x04) {
+            // "menu mode"
+            g_machine.mapper_regs[4] = g_machine.mapper_regs[2] & 0xF0;
+            if (! (g_machine.mapper_regs[4] & 0x30)) {
+                g_machine.mapper_regs[4] = g_machine.mapper_regs[2] & 0xFE;
+            }
+            g_machine.mapper_regs[5] = g_machine.mapper_regs[3] & 0xF0;
+            if (! (g_machine.mapper_regs[5] & 0x30)) {
+                g_machine.mapper_regs[5] = g_machine.mapper_regs[3] & 0xFE;
+            }
+        }
+        unsigned int rom_chip_select_and_enable = ((g_machine.mapper_regs[1] & 0x10) ? 0x40 : 0x00) | ((g_machine.mapper_regs[0] & 0x40) ? 0x20 : 0x00);
+        Map_8k_ROM(0, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[5] * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[5] * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[5] * 2) | (g_machine.mapper_regs[3] * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[5] * 2) | (g_machine.mapper_regs[3] * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[4] * 2) | (g_machine.mapper_regs[2] * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((rom_chip_select_and_enable * 2) | (g_machine.mapper_regs[4] * 2) | (g_machine.mapper_regs[2] * 2) | 1) & tsms.Pages_Mask_8k);
+        if (Addr <= 0xBFFF) {
+            // no RAM shadowing for writes to this address
+            return;
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+
+// Mapper #36
+// Super Gear 23 in 1 [Ninja Gaiden]
+WRITE_FUNC(Write_Mapper_GG_Super_Gear_23_in_1_FFFE_FFFF)
+{
+    if ((Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[1] = Value;
+            if (! (g_machine.mapper_regs[0] & 0x80)) {
+                // "menu mode"
+                if (Value & 0x08) {
+                    // switch to "Sega mode"
+                    g_machine.mapper_regs[0] |= 0x80;
+                    g_machine.mapper_regs[2] = 1;
+                }
+            }
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[2] = Value;
+            if (! (g_machine.mapper_regs[0] & 0x80)) {
+                // "menu mode"
+                if (Value & 0x08) {
+                    g_machine.mapper_regs[0] &= 0xCF;
+                    g_machine.mapper_regs[0] |= (Value & 0x03) << 4;
+                    if (g_machine.mapper_regs[0] & 0x20) {
+                        drv_set(DRV_SMS);
+                    } else {
+                        drv_set(DRV_GG);
+                    }
+                    gamebox_resize_all();
+                    VDP_UpdateLineLimits();
+                    Video_GameMode_UpdateBounds();
+                } else if (Value & 0x04) {
+                    g_machine.mapper_regs[0] &= 0xF3;
+                    g_machine.mapper_regs[0] |= (Value & 0x03) << 2;
+                } else {
+                    g_machine.mapper_regs[0] &= 0xFC;
+                    g_machine.mapper_regs[0] |= Value & 0x03;
+                }
+            }
+        }
+        if (! (g_machine.mapper_regs[0] & 0x80)) {
+            // "menu mode"
+            Map_8k_ROM(0, 0x80 & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, 0x80 & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, 0x80 & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, 0x80 & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, 0x80 & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, 0x80 & tsms.Pages_Mask_8k);
+        } else {
+            // "Sega mode"
+            Map_8k_ROM(0, ((g_machine.mapper_regs[0] & 0x1F) * 4) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (((g_machine.mapper_regs[0] & 0x1F) * 4) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, (((g_machine.mapper_regs[0] & 0x1F) * 4) | ((g_machine.mapper_regs[2] & 0x07) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (((g_machine.mapper_regs[0] & 0x1F) * 4) | ((g_machine.mapper_regs[2] & 0x07) * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, (((g_machine.mapper_regs[0] & 0x1F) * 4) | ((g_machine.mapper_regs[1] & 0x07) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (((g_machine.mapper_regs[0] & 0x1F) * 4) | ((g_machine.mapper_regs[1] & 0x07) * 2) | 1) & tsms.Pages_Mask_8k);
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #37
+// Super GG 18 in 1 [Nettou Samurai]
+WRITE_FUNC (Write_Mapper_GG_Super_GG_18_in_1_FFF8_FFFE)
+{
+    if ((Addr == 0xFFF8) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF8) {
+            if (g_machine.mapper_regs[0] == 0x00) {
+                g_machine.mapper_regs[0] = Value;
+                if (Value & 0x18) {
+                    drv_set(DRV_SMS);
+                } else {
+                    drv_set(DRV_GG);
+                }
+                gamebox_resize_all();
+                VDP_UpdateLineLimits();
+                Video_GameMode_UpdateBounds();
+            }
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value;
+        }
+        Map_8k_ROM(0, (g_machine.mapper_regs[0] * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((g_machine.mapper_regs[0] * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((g_machine.mapper_regs[0] | g_machine.mapper_regs[2]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((g_machine.mapper_regs[0] | g_machine.mapper_regs[2]) * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((g_machine.mapper_regs[0] | g_machine.mapper_regs[1]) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (((g_machine.mapper_regs[0] | g_machine.mapper_regs[1]) * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #38
+// Super GG 15 in 1 [Sonic 5]
+// GG Super 68 in 1 [Asterix]
+WRITE_FUNC(Write_Mapper_GG_FFF8_FFF9_FFFA_FFFE_FFFF_15_1)
+{
+    if ((Addr == 0xFFF8) || (Addr == 0xFFF9) || (Addr == 0xFFFA) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF8) {
+            g_machine.mapper_regs[2] = Value;
+            Map_8k_ROM(0, (g_machine.mapper_regs[2] * 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, ((g_machine.mapper_regs[2] * 2) | 0x01) & tsms.Pages_Mask_8k);
+        } else if (Addr == 0xFFF9) {
+            g_machine.mapper_regs[3] = Value;
+        } else if (Addr == 0xFFFA) {
+            g_machine.mapper_regs[4] = Value;
+            if (Value & 0x40) {
+                drv_set(DRV_SMS);
+            } else {
+                drv_set(DRV_GG);
+            }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[1] = (Value & ~g_machine.mapper_regs[3]) | (g_machine.mapper_regs[2] & g_machine.mapper_regs[3]);
+            Map_8k_ROM(2, (g_machine.mapper_regs[1] * 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, ((g_machine.mapper_regs[1] * 2) | 0x01) & tsms.Pages_Mask_8k);
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[0] = (Value & ~g_machine.mapper_regs[3]) | (g_machine.mapper_regs[2] & g_machine.mapper_regs[3]);
+            Map_8k_ROM(4, (g_machine.mapper_regs[0] * 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, ((g_machine.mapper_regs[0] * 2) | 0x01) & tsms.Pages_Mask_8k);
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #39
+// 11 Hap Gam-Boy
+WRITE_FUNC (Write_Mapper_SMS_Korean_SMS_32KB_2000)
+{
+    if (Addr == 0x2000) // Configurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[0] = Value;
+        Map_8k_ROM(0, (Value * 4) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (Value * 4 + 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (Value * 4 + 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (Value * 4 + 3) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, (Value * 4) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (Value * 4 + 1) & tsms.Pages_Mask_8k);
+        return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
 // Mapper #40
 // Zemina Best 88 (KR)
 // Zemina Best 25 (KR)
@@ -984,6 +1647,749 @@ WRITE_FUNC (Write_Mapper_SMS_Korean_MSX_SMS_8000)
         // RAM [0xC000] = [0xE000] ------------------------------------------------
     case 6: Mem_Pages[6][Addr] = Value; return;
     case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #41
+// Super 68 in 1 [Simpson]
+WRITE_FUNC(Write_Mapper_GG_Super_68_in_1_FFFE_FFFF)
+{
+    if ((Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[1] = Value;
+            if (! (g_machine.mapper_regs[3] & 0x80)) {
+                // "menu mode"
+                if (Value & 0x08) {
+                    g_machine.mapper_regs[1] = 0;
+                    g_machine.mapper_regs[2] = 1;
+                    // switch to "Sega mode"
+                    g_machine.mapper_regs[3] |= 0x80;
+                    bool sms_gg_mode = false;
+                    if (g_machine.mapper_regs[3] & 0x08) {
+                        // SMS-GG mode according to heuristic
+                        int game_id_low = g_machine.mapper_regs[0] & 0x3F;
+                        sms_gg_mode = (game_id_low < 0x14) || (game_id_low == 0x18) || (game_id_low == 0x28);
+                    } else if (g_machine.mapper_regs[3] & 0x04) {
+                        // SMS-GG mode according to game_id & 0x40
+                        sms_gg_mode = !! (g_machine.mapper_regs[0] & 0x40);
+                    } else {
+                        // SMS-GG mode according to game_id & 0x20
+                        // (game ID limited to six bits in this mode)
+                        sms_gg_mode = !! (g_machine.mapper_regs[0] & 0x20);
+                    }
+                    if (sms_gg_mode) {
+                        drv_set(DRV_SMS);
+                    } else {
+                        drv_set(DRV_GG);
+                    }
+                    gamebox_resize_all();
+                    VDP_UpdateLineLimits();
+                    Video_GameMode_UpdateBounds();
+                }
+            }
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[2] = Value;
+            if (! (g_machine.mapper_regs[3] & 0x80)) {
+                // "menu mode"
+                if ((Value & 0x0C) == 0x0C) {
+                    g_machine.mapper_regs[0] &= 0x3F;
+                    g_machine.mapper_regs[0] |= (Value & 0x03) << 6;
+
+                    if (! (g_machine.mapper_regs[3] & 0x08)) {
+                        // choose mechanism for SMS-GG mode signalling in non-heuristic mode:
+                        // store "use game_id & 0x40" bit 0x04 in register 3
+                        g_machine.mapper_regs[3] = 0x04 | (g_machine.mapper_regs[3] & 0xF3);
+                    }
+                } else if (Value & 0x08) {
+                    g_machine.mapper_regs[0] &= 0xCF;
+                    g_machine.mapper_regs[0] |= (Value & 0x03) << 4;
+                } else if (Value & 0x04) {
+                    g_machine.mapper_regs[0] &= 0xF3;
+                    g_machine.mapper_regs[0] |= (Value & 0x03) << 2;
+                } else {
+                    g_machine.mapper_regs[0] &= 0xFC;
+                    g_machine.mapper_regs[0] |= Value & 0x03;
+                    // choose mechanism for SMS-GG mode signalling:
+                    // store "use heuristic" as bit 0x08 in register 3 (and clear bit 0x04)
+                    g_machine.mapper_regs[3] = (g_machine.mapper_regs[0] & 0x08) | (g_machine.mapper_regs[3] & 0xF3);
+                }
+            }
+        }
+
+        unsigned int game_id = g_machine.mapper_regs[0];
+        // when ROM is three megabytes it acts like 4MB layout A B C C
+        // NOTE: tsms.Pages_Count_8k is actually a maximum value -- not a count!
+        unsigned int game_id_mask = ((game_id & 0x40) && ((tsms.Pages_Count_8k + 1) / 4 == 0x60)) ? 0x5F : 0xFF;
+        unsigned int base_page_8k = (game_id & game_id_mask) * 4;
+
+        // NOTE: 68-in-1 hardware masks pages with 0x07 for game_id
+        // less than 0x20 but 53-in-1 doesn't, and a wider mask
+        // doesn't break anything for 68-in-1
+        unsigned int paging_mask = 0x0F;
+        
+        if (! (g_machine.mapper_regs[3] & 0x80)) {
+            // "menu mode"
+            Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, (base_page_8k | 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (base_page_8k | 3) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+        } else {
+            // "Sega mode"
+            Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, (base_page_8k | ((g_machine.mapper_regs[2] & paging_mask) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, (base_page_8k | ((g_machine.mapper_regs[2] & paging_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, (base_page_8k | ((g_machine.mapper_regs[1] & paging_mask) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (base_page_8k | ((g_machine.mapper_regs[1] & paging_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #42
+// Gear 6 in 1 [Alien Syndrome]
+WRITE_FUNC(Write_Mapper_GG_Gear_6_in_1_FFFE_FFF7_FFFF)
+{
+    if ((Addr == 0xFFF7) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF7)
+        {
+            if (! (g_machine.mapper_regs[0] & 0x80)) {
+                // switch from "menu" mapper mode to "Sega" mapper mode
+                g_machine.mapper_regs[0] = 0x80 | ((Value & 0x01) << 4) | (g_machine.mapper_regs[2] & 0x0F);
+                g_machine.mapper_regs[2] = 1;
+            }
+        }
+        else if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[1] = Value;
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[2] = Value;
+        }
+        int mask = (g_machine.mapper_regs[0] & 0x80) ? 0x07 : 0x01;
+        Map_8k_ROM(0, ((g_machine.mapper_regs[0] & 0x1F) * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (((g_machine.mapper_regs[0] & 0x1F) * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (((g_machine.mapper_regs[0] & 0x1F) * 2) | ((g_machine.mapper_regs[2] & mask) * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((g_machine.mapper_regs[0] & 0x1F) * 2) | ((g_machine.mapper_regs[2] & mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, (((g_machine.mapper_regs[0] & 0x1F) * 2) | ((g_machine.mapper_regs[1] & mask) * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (((g_machine.mapper_regs[0] & 0x1F) * 2) | ((g_machine.mapper_regs[1] & mask) * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #43
+// Super Game Gear 9 in 1 [Sonic II]
+WRITE_FUNC(Write_Mapper_GG_Super_9_in_1_FFFE_FFF7_FFFF)
+{
+    if (((Addr == 0x0A7E) && (Value & 0x20)) || (Addr == 0xFFF7) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF7)
+        {
+            if (! (g_machine.mapper_regs[2])) {
+                g_machine.mapper_regs[0] |= Value;
+            }
+        }
+        else if (Addr == 0xFFFF)
+        {
+            g_machine.mapper_regs[1] = Value;
+        }
+        else if (Addr == 0xFFFE)
+        {
+            g_machine.mapper_regs[2] = Value;
+        }
+        bool force_reset = false;
+        if ((Addr == 0x0A7E) && (Value & 0x20)) {
+            // This seems to force a reset and apply the mapping
+            g_machine.mapper_regs[1] = 0;
+            g_machine.mapper_regs[2] = 1;
+            force_reset = true;
+        }
+        if (force_reset || (Addr == 0xFFFE) || (Addr == 0xFFFF)) {
+            int mapbase = g_machine.mapper_regs[0] & 0xFE;
+            Map_8k_ROM(0, (mapbase * 2) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(1, ((mapbase * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(2, ((mapbase * 2) | ((g_machine.mapper_regs[2] & 0x1F) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(3, ((mapbase * 2) | ((g_machine.mapper_regs[2] & 0x1F) * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(4, ((mapbase * 2) | ((g_machine.mapper_regs[1] & 0x1F) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, ((mapbase * 2) | ((g_machine.mapper_regs[1] & 0x1F) * 2) | 1) & tsms.Pages_Mask_8k);
+        }
+        if (g_machine.mapper_regs[0] & 0x01) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        if (force_reset) {
+            Machine_Reset_Z80();
+            return;
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #44
+// Super Game 45 [Road Fighter] (KR)
+WRITE_FUNC(Write_Mapper_SMS_Korean_MSX_16KB_BFFE)
+{
+    if (Addr == 0xBFFE) // Configurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[0] = Value;
+        unsigned int page_mask = ((Value & 0x3f) == 0x21) ? 0x3f : 0x1f;
+        Map_8k_ROM(2, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        if (Value & 0x20) {
+            // "Namco" mapping: A B B A
+            Map_8k_ROM(4, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+        } else {
+            // normal mapping: A B A B
+            Map_8k_ROM(4, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        }
+        return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #45
+// Super Game 30 [Road Fighter] [Super Game 45] (KR)
+WRITE_FUNC(Write_Mapper_SMS_Korean_MSX_16KB_FFFF)
+{
+    if (Addr == 0xFFFF) // Configurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[0] = Value;
+        unsigned int page_mask = ((Value & 0x3f) == 0x21) ? 0x3f : 0x1f;
+        Map_8k_ROM(2, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        if (Value & 0x20) {
+            // "Namco" mapping: A B B A
+            Map_8k_ROM(4, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+        } else {
+            // normal mapping: A B A B
+            Map_8k_ROM(4, (((Value & page_mask) * 2)) & tsms.Pages_Mask_8k);
+            Map_8k_ROM(5, (((Value & page_mask) * 2) | 1) & tsms.Pages_Mask_8k);
+        }
+        //return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #46
+// 12 in 1 [Hang On] [SMS-GG]
+// Super 12 in 1 [Teddy Boy] [SMS-MD]
+//
+// It is no coincidence that this is very similar to
+// Write_Mapper_SMS_Korean_FFFF_HiCom as this mapper is an extension
+// of that one allowing power-cycle switching between multiple 128KB
+// Hi-Com collections
+WRITE_FUNC(Write_Mapper_SMS_Meta_Power_FFFF_HiCom)
+{
+    if (Addr == 0xFFFF) // Frame 2 -----------------------------------------------
+    {
+        g_machine.mapper_regs[1] = Value & 3;
+        unsigned int base_page_8k = (g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 4;
+        Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (base_page_8k | 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (base_page_8k | 3) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #47
+// Super 2 in 1 - Sonic & Alien Storm [SMS-GG]
+// Untitled 4-in-1 (Moonwalker, Double Dragon, Sagaia & Spider-Man) [SMS-GG]
+WRITE_FUNC(Write_Mapper_SMS_Power_256KB_FFFF_FFFE)
+{
+    if (Addr == 0xFFFF) // Upper reconfigurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[1] = Value & 0x0f;
+        unsigned int upper_page_8k = (g_machine.mapper_regs[0] + g_machine.mapper_regs[1]) * 2;
+        Map_8k_ROM(4, upper_page_8k & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (upper_page_8k | 1) & tsms.Pages_Mask_8k);
+    }
+    else if (Addr == 0xFFFE) // Lower reconfigurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[2] = Value & 0x0f;
+        unsigned int lower_page_8k = (g_machine.mapper_regs[0] + g_machine.mapper_regs[2]) * 2;
+        Map_8k_ROM(2, lower_page_8k & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (lower_page_8k | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #48
+// GG 48 in 1 [Doraemon 2]
+WRITE_FUNC (Write_Mapper_GG_48_in_1_FFF8_FFF9_FFFE_FFFF)
+{
+    // Mapper register allocations:
+    // - Mode and mask: g_machine.mapper_regs[0]
+    //   Bits 0xE0: configuration mode
+    //   - 0x00: not in configuration mode
+    //   - 0x80: expecting paging mask [step 1]
+    //   - 0x40: expecting lower 5 bits of base page [step 2]
+    //   - 0x20: expecting upper 3 bits of base page [step 3]
+    //   - 0xE0: not expecting further configuration bytes
+    //   Bits 0x1F: 16KB paging mask
+    // - Base page: g_machine.mapper_regs[1]
+    //   Bits 0xFF: 16KB base page
+    // - Upper Sega paging register: g_machine.mapper_regs[2]
+    //   Bits 0x1F: 16KB page offset for region 0x8000..0xBFFF
+    // - Lower Sega paging register: g_machine.mapper_regs[3]
+    //   Bits 0x1F: 16KB page offset for region 0x4000..0x7FFF
+    if ((Addr == 0xFFF8) || (Addr == 0xFFF9) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        if (Addr == 0xFFF8) {
+            // lock mapper
+            g_machine.mapper_regs[0] &= 0x1F;
+            if (Value & 0x10) {
+                // unlock mapper, expect paging mask next
+                g_machine.mapper_regs[0] |= 0x80;
+            }
+        } else if (Addr == 0xFFF9) {
+            if ((g_machine.mapper_regs[0] & 0xE0) == 0x80) {
+                // expecting paging mask
+                g_machine.mapper_regs[0] &= 0xE0;
+                g_machine.mapper_regs[0] |= Value & 0x1F;
+                // expect lower 5 bits of base page next
+                g_machine.mapper_regs[0] &= 0x1F;
+                g_machine.mapper_regs[0] |= 0x40;
+            } else if ((g_machine.mapper_regs[0] & 0xE0) == 0x40) {
+                // expecting lower 5 bits of base page
+                g_machine.mapper_regs[1] &= 0xE0;
+                g_machine.mapper_regs[1] |= Value & 0x1F;
+                // expect upper 3 bits of base page next
+                g_machine.mapper_regs[0] &= 0x1F;
+                g_machine.mapper_regs[0] |= 0x20;
+            } else if (((g_machine.mapper_regs[0] & 0xE0) == 0x20) && ((Value & 0x18) == 0x18)) {
+                // expecting upper 3 bits of base page
+                g_machine.mapper_regs[1] &= 0x1F;
+                g_machine.mapper_regs[1] |= (Value & 0x07) << 5;
+                // subsequent writes to 0xFFF9 ignored
+                g_machine.mapper_regs[0] &= 0x1F;
+                g_machine.mapper_regs[0] |= 0xE0;
+            }
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[3] = Value;
+        }
+        unsigned int paging_mask = g_machine.mapper_regs[0] & 0x1F;
+        unsigned int base_page_16k = g_machine.mapper_regs[1];
+        unsigned int upper_page_16k = base_page_16k + (g_machine.mapper_regs[2] & paging_mask);
+        unsigned int lower_page_16k = base_page_16k + (g_machine.mapper_regs[3] & paging_mask);
+        Map_8k_ROM(0, (base_page_16k * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((base_page_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (lower_page_16k * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((lower_page_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, (upper_page_16k * 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((upper_page_16k * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #49
+// 18 in 1 - Super Games Collection [Columns]
+WRITE_FUNC (Write_Mapper_GG_18_in_1_00xx)
+{
+    // FIXME: It is likely the actual hardware does not completely
+    // decode the address bits, but the effective mapper address
+    // decoding mask is not yet known
+    if ((Addr | 0x001F) == 0x001F) // Configurable segment -----------------------------------------------
+    {
+        g_machine.mapper_regs[0] = Addr & 0x1F;
+        if (Addr & 0x10) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+        unsigned int base_page_8k = (Addr & 0x0F) * 4;
+        Map_8k_ROM(0, base_page_8k & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (base_page_8k | 2) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (base_page_8k | 3) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, base_page_8k & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (base_page_8k | 1) & tsms.Pages_Mask_8k);
+        return;
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #50
+// Game Gear Super 16 in 1 ~ Wudi Xilie [Columns] (Unl)
+WRITE_FUNC (Write_Mapper_GG_Super_16_in_1_Columns_FFFx)
+{
+    const unsigned int incomplete_address_decoding_assumed_bits = 0x000F;
+
+    if ((Addr | incomplete_address_decoding_assumed_bits) == 0xFFFF) // Configurable segment -----------------------------------------------
+    {
+        if ((Value & 0xC0) == 0xC0) {
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0x3F) | ((Value & 0x30) << 2);
+        } else if ((Value & 0xC0) == 0x80) {
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0xCF) | (Value & 0x30);
+        } else if ((Value & 0xC0) == 0x40) {
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0xF3) | ((Value & 0x30) >> 2);
+        }
+
+        bool sega_mode = (g_machine.mapper_regs[0] & 0x40) ? true : false;
+        bool sms_gg_mode = (g_machine.mapper_regs[0] & 0x10) ? true : false;
+
+        // not sure whether real hardware aliases these too
+        if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value & 0x0F;
+        }
+        if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value & 0x0F;
+        }
+
+        if (((Value & 0xC0) == 0x00) && !sega_mode) {
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0xFC) | ((Value & 0x30) >> 4);
+        }
+
+        unsigned int base_page_32k = g_machine.mapper_regs[0] & 0x0F;
+        unsigned int page_8000_offset_16k = sega_mode ? g_machine.mapper_regs[1] : 0;
+        unsigned int page_4000_offset_16k = sega_mode ? g_machine.mapper_regs[2] : 1;
+
+        if (sms_gg_mode) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+
+        Map_8k_ROM(0, ((base_page_32k * 4) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((base_page_32k * 4) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error(Addr, Value);
+}
+
+// Mapper #51
+// Gear 30 in 1 [Sonic]
+WRITE_FUNC (Write_Mapper_GG_30_in_1_FFF6_FFFE_FFF7_FFFF) {
+    if ((Addr == 0xFFF6) || (Addr == 0xFFFE) || (Addr == 0xFFF7) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        // mapper register allocation:
+        // 0:
+        // - bit 0x80: SMS-GG mode when set, GG mode otherwise
+        // - bit 0x40: 128KB paging mask when set, 256KB otherwise
+        // - bits 0x3F: base page (32KB)
+        // 1:
+        // - bits 0x0F or 0x07: 16KB paging offset for 0x8000..0xBFFF
+        // 2:
+        // - bit 0x80: used to select second MB of the ROM during reconfiguration
+        // - bit 0x40: used to select 128KB paging mask vs. 256KB during reconfiguration
+        // - bits 0x3E: used for base page selection during reconfiguration
+        // - bits 0x0F or 0x07: 16KB paging offset for 0x4000..0x7FFF
+        if (Addr == 0xFFF6) {
+            g_machine.mapper_regs[0] = ((Value & 0x04) << 5) | (g_machine.mapper_regs[0] & 0x7F);
+            g_machine.mapper_regs[2] = Value;
+            g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0x80) | (g_machine.mapper_regs[2] & 0x40) | ((g_machine.mapper_regs[2] & 0x80) >> 2) | ((g_machine.mapper_regs[2] & 0x3f) >> 1);
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0xFFF7) {
+            if (Value == (g_machine.mapper_regs[2] >> 4)) {
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0x80) | (g_machine.mapper_regs[2] & 0x40) | ((g_machine.mapper_regs[2] & 0x80) >> 2) | ((g_machine.mapper_regs[2] & 0x3f) >> 1);
+                g_machine.mapper_regs[1] = 0;
+                g_machine.mapper_regs[2] = 1;
+            }
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        }
+
+        bool sms_gg_mode = (g_machine.mapper_regs[0] & 0x80) ? true : false;
+
+        unsigned int base_page_32k = (g_machine.mapper_regs[0] & 0x3F) ^ 0x20;
+        unsigned int paging_mask_16k = (g_machine.mapper_regs[0] & 0x40) ? 0x0F : 0x0F;
+        unsigned int page_8000_offset_16k = g_machine.mapper_regs[1] & paging_mask_16k;
+        unsigned int page_4000_offset_16k = g_machine.mapper_regs[2] & paging_mask_16k;
+
+        if (sms_gg_mode) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+
+        Map_8k_ROM(0, ((base_page_32k * 4) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((base_page_32k * 4) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #52
+// Gear 52 in 1 [Sonic]
+WRITE_FUNC (Write_Mapper_GG_52_in_1_FFF6_FFFE_FFF7_FFFF) {
+    if ((Addr == 0xFFF6) || (Addr == 0xFFFE) || (Addr == 0xFFF7) || (Addr == 0xFFFF)) // Configurable segment -----------------------------------------------
+    {
+        // mapper register allocation:
+        // 0:
+        // - bit 0x80: SMS-GG mode when set, GG mode otherwise
+        // - bit 0x40: 128KB paging mask when set, 256KB otherwise
+        // - bits 0x3F: base page (32KB)
+        // 1:
+        // - bits 0x0F or 0x07: 16KB paging offset for 0x8000..0xBFFF
+        // 2:
+        // - bit 0x80: used to select second MB of the ROM during reconfiguration
+        // - bit 0x40: used to select 128KB paging mask vs. 256KB during reconfiguration
+        // - bits 0x3E: used for base page selection during reconfiguration
+        // - bits 0x0F or 0x07: 16KB paging offset for 0x4000..0x7FFF
+        if (Addr == 0xFFF6) {
+            g_machine.mapper_regs[0] = ((Value & 0x04) << 5) | (g_machine.mapper_regs[0] & 0x7F);
+        } else if (Addr == 0xFFFE) {
+            g_machine.mapper_regs[2] = Value;
+        } else if (Addr == 0xFFF7) {
+            if (Value == (g_machine.mapper_regs[2] >> 4)) {
+                g_machine.mapper_regs[0] = (g_machine.mapper_regs[0] & 0x80) | (g_machine.mapper_regs[2] & 0x40) | ((g_machine.mapper_regs[2] & 0x80) >> 2) | ((g_machine.mapper_regs[2] & 0x3f) >> 1);
+                g_machine.mapper_regs[1] = 0;
+                g_machine.mapper_regs[2] = 1;
+            }
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        }
+
+        bool sms_gg_mode = (g_machine.mapper_regs[0] & 0x80) ? true : false;
+
+        unsigned int base_page_32k = g_machine.mapper_regs[0] & 0x3F;
+        unsigned int paging_mask_16k = (g_machine.mapper_regs[0] & 0x40) ? 0x0F : 0x0F;
+        unsigned int page_8000_offset_16k = g_machine.mapper_regs[1] & paging_mask_16k;
+        unsigned int page_4000_offset_16k = g_machine.mapper_regs[2] & paging_mask_16k;
+
+        if (sms_gg_mode) {
+            drv_set(DRV_SMS);
+        } else {
+            drv_set(DRV_GG);
+        }
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
+
+        Map_8k_ROM(0, ((base_page_32k * 4) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((base_page_32k * 4) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, ((base_page_32k * 4) | (page_4000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, ((base_page_32k * 4) | (page_8000_offset_16k * 2) | 1) & tsms.Pages_Mask_8k);
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #53
+// Real 24 in 1 [Sonic II] (Unl)
+WRITE_FUNC (Write_Mapper_GG_Real_24_in_1_FFFE_0000_FFFF) {
+    if ((Addr == 0x0000) || (Addr == 0xFFFE) || (Addr == 0xFFFF)) { // Configurable segment -----------------------------------------------
+        // mapper register allocation:
+        // 0: 0x0000: outer paging configuration and SMS-GG mode
+        // - bit 0x80: set when mapping the second megabyte, clear otherwise
+        // - bit 0x40: set when activating SMS-GG mode, clear otherwise
+        // - bits 0x3F: 32KB base page for outer page selection
+        //
+        // For paging to work, the base page must be in an eligible region and
+        // all paging-modifiable bits of the 32KB base page must be set
+        //
+        // 16KB paging mask bits:
+        // - 0x10: when base page bit 0x08 is set and base page > 0x30
+        // - 0x08: when base page bit 0x04 is set and base page > 0x20
+        // - 0x04: when base page bit 0x02 is set and base page > 0x14
+        // - 0x02: when base page bit 0x01 is set and base page > 0x12
+        // - 0x01: always available
+        //
+        // 1: 0xFFFF: 16KB paging offset for region 0x8000..0xBFFF (restricted by 16KB paging mask)
+        // 2: 0xFFFE: 16KB paging offset for region 0x4000..0x7FFF (restricted by 16KB paging mask)
+
+        if (Addr == 0x0000) {
+            g_machine.mapper_regs[0] |= Value;
+            bool sms_gg_mode = (g_machine.mapper_regs[0] & 0x40) ? true : false;
+            if (sms_gg_mode) {
+                drv_set(DRV_SMS);
+            } else {
+                drv_set(DRV_GG);
+            }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
+        } else if (Addr == 0xFFFF) {
+            g_machine.mapper_regs[1] = Value;
+        } else if (Addr == 0xFFFE) {
+            if (Value & 0x80) {
+                // 0xB0 is written at startup, no idea what it means
+            } else {
+                g_machine.mapper_regs[2] = Value;
+            }
+        }
+
+        unsigned int base_page_32k = (g_machine.mapper_regs[0] & 0x3F) | ((g_machine.mapper_regs[0] & 0x80) >> 2);
+        unsigned int paging_mask_16k = 0x01 | (2 * (
+            ((base_page_32k > 0x12) ? (base_page_32k & 0x01) : 0x00)
+            | ((base_page_32k > 0x14) ? (base_page_32k & 0x02) : 0x00)
+            | ((base_page_32k > 0x20) ? (base_page_32k & 0x04) : 0x00)
+            | ((base_page_32k > 0x30) ? (base_page_32k & 0x08) : 0x00)));
+        unsigned int base_page_16k = (2 * base_page_32k) & ~paging_mask_16k;
+        unsigned int page_8000_offset_16k = g_machine.mapper_regs[1] & paging_mask_16k;
+        unsigned int page_4000_offset_16k = g_machine.mapper_regs[2] & paging_mask_16k;
+
+        Map_8k_ROM(0, ((base_page_16k * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(1, ((base_page_16k * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(2, (((base_page_16k | page_4000_offset_16k) * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(3, (((base_page_16k | page_4000_offset_16k) * 2) | 1) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(4, (((base_page_16k | page_8000_offset_16k) * 2) | 0) & tsms.Pages_Mask_8k);
+        Map_8k_ROM(5, (((base_page_16k | page_8000_offset_16k) * 2) | 1) & tsms.Pages_Mask_8k);
+
+        if (Addr == 0x0000) {
+            // no RAM mirroring for register 0x0000
+            return;
+        }
+    }
+
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages[6][Addr] = Value; return;
+    case 7: Mem_Pages[7][Addr] = Value; return;
+    }
+
+    Write_Error (Addr, Value);
+}
+
+// Mapper #127
+// 2404e9ea7e6e520b93a7c24ba49556af01900fd0
+WRITE_FUNC (Write_Mapper_GG_Homebrew_FFF2)
+{
+    if (Addr == 0xFFF2) {
+        // 0xFFF2: Map 16KB page at 0x8000-0xBFFF
+        RAM [0x1FFF] = g_machine.mapper_regs[2] = Value & tsms.Pages_Mask_16k;
+        Map_16k_ROM (4, g_machine.mapper_regs[2] * 2);
+    }
+
+    // RAM -----------------------------------------------------------------------
+    switch (Addr >> 13)
+    {
+        // RAM [0xC000] = [0xE000] ------------------------------------------------
+    case 6: Mem_Pages [6] [Addr] = Value; return;
+    case 7: Mem_Pages [7] [Addr] = Value; return;
     }
 
     Write_Error (Addr, Value);
