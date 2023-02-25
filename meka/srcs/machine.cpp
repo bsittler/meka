@@ -22,6 +22,7 @@
 #include "tvtype.h"
 #include "sound/fmunit.h"
 #include "sound/psg.h"
+#include "app_game.h"
 
 //-----------------------------------------------------------------------------
 // Data
@@ -484,8 +485,9 @@ void    Machine_Set_Mapping (void)
             g_machine.mapper_regs[i] = 0;
         g_machine.mapper_regs[2] = 1;
         drv_set(DRV_GG);
-        tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
-        VDP_VideoMode_Change();
+        gamebox_resize_all();
+        VDP_UpdateLineLimits();
+        Video_GameMode_UpdateBounds();
         break;
 
     case MAPPER_SC3000_Survivors_Multicart:

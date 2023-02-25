@@ -26,6 +26,7 @@ void        Load_Game_Fixup(void)
 {
     int     i;
     u8      b;
+    bool    sms_gg_mode_in_mapper = false;
 
     // CPU
     #ifdef MARAT_Z80
@@ -152,15 +153,19 @@ void        Load_Game_Fixup(void)
                 WrZ80_NoHook(0xBFFF, mapper_mode);
                 WrZ80_NoHook(0xFFFF, slot_8000_page_offset_16k);
                 WrZ80_NoHook(0xFFFE, slot_4000_page_offset_16k);
+                sms_gg_mode_in_mapper = true;
             }
             break;
         }
     }
 
     // VDP/Graphic related
-    tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
-    VDP_UpdateLineLimits();
-    // FALSE!!! // tsms.VDP_Line = 224;
+
+    if (!sms_gg_mode_in_mapper) {
+        tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
+        VDP_UpdateLineLimits();
+        // FALSE!!! // tsms.VDP_Line = 224;
+    }
 
     // Rewrite all VDP registers (we can do that since it has zero side-effect)
     for (i = 0; i < 16; i ++)

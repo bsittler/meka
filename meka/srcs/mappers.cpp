@@ -15,6 +15,8 @@
 #include "mappers.h"
 #include "eeprom.h"
 #include "vdp.h"
+#include "video.h"
+#include "app_game.h"
 
 //-----------------------------------------------------------------------------
 // Data
@@ -952,13 +954,12 @@ WRITE_FUNC(Write_Mapper_GG_Super_GG_15_BFFF_FFFF)
             g_machine.mapper_regs[2] = 1;
             if (Value & 0x10) {
                 drv_set(DRV_SMS);
-                tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_SIZE;
-                VDP_VideoMode_Change();
             } else {
                 drv_set(DRV_GG);
-                tsms.VDP_Video_Change |= VDP_VIDEO_CHANGE_ALL;
-                VDP_VideoMode_Change();
             }
+            gamebox_resize_all();
+            VDP_UpdateLineLimits();
+            Video_GameMode_UpdateBounds();
         }
         else if (Addr == 0xFFFF)
         {
