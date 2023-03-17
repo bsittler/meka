@@ -932,7 +932,7 @@ WRITE_FUNC(Write_Mapper_SMS_Korean_MD_FFFA)
 }
 
 // Mapper #29
-// Super GG 15 [Gold & Yellow Label]
+// Super GG 15 [Cliffhanger] [Gold & Yellow Label]
 WRITE_FUNC(Write_Mapper_GG_Super_GG_15_BFFF_FFFF)
 {
     // TODO: implement the various restrictions found in the hardware,
